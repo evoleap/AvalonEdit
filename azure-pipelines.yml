@@ -63,6 +63,7 @@ jobs:
         command: 'build'
         workingDirectory: 'AvalonEdit'
         arguments: '-c Release /property:Version=$(symVer)'
+        projects: 'ICSharpCode.AvalonEdit.sln'
     # Find all .nupkg files (excluding .symbols.nupkg) and upload it to private feed (use symVer for the package’s final version number)
     - task: NuGetCommand@2
       inputs:
