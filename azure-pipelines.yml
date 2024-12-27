@@ -61,9 +61,9 @@ jobs:
     - task: DotNetCoreCLI@2
       inputs:
         command: 'build'
-        workingDirectory: 'AvalonEdit'
+        workingDirectory: 'AvalonEdit/ICSharpCode.AvalonEdit'
         arguments: '-c Release /property:Version=$(symVer)'
-        projects: 'ICSharpCode.AvalonEdit.sln'
+        projects: 'ICSharpCode.AvalonEdit.csproj'
     # Find all .nupkg files (excluding .symbols.nupkg) and upload it to private feed (use symVer for the package’s final version number)
     - task: NuGetCommand@2
       inputs:
