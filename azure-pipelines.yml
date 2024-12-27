@@ -56,6 +56,7 @@ jobs:
         command: 'test'
         workingDirectory: 'AvalonEdit'
         arguments: '-c Release /property:Version=$(symVer)'
+        projects: 'ICSharpCode.AvalonEdit.sln'
     # Run dotnet build in AvalonEdit
     - task: DotNetCoreCLI@2
       inputs:
