@@ -46,11 +46,11 @@ jobs:
         verSuffixVar: 'verSuffix'
     # NuGet Authenticate
     - task: NuGetAuthenticate@1
-    # Run dotnet restore for every *.sln file in the repo (restore from private feed)
+    # Run dotnet restore for every ICSharpCode.AvalonEdit.sln file in the repo (restore from private feed)
     - task: DotNetCoreCLI@2
       inputs:
         command: 'restore'
-        projects: '**/*.sln'
+        projects: '**/ICSharpCode.AvalonEdit.sln'
         feedsToUse: 'select'
         vstsFeed: $(PrivateFeedId)
     # Run dotnet test in $(getRepo.name)
