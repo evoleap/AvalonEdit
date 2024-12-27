@@ -789,10 +789,13 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		/// </summary>
 		public VisualLine GetOrConstructVisualLine(DocumentLine documentLine)
 		{
-			if (documentLine == null)
+			if (documentLine == null) {
 				throw new ArgumentNullException("documentLine");
-			if (!this.Document.Lines.Contains(documentLine))
+			}
+			if (!this.Document.Lines.Contains(documentLine)) {
 				throw new InvalidOperationException("Line belongs to wrong document");
+			}
+				
 			VerifyAccess();
 
 			VisualLine l = GetVisualLine(documentLine.LineNumber);
@@ -800,8 +803,30 @@ namespace ICSharpCode.AvalonEdit.Rendering
 				TextRunProperties globalTextRunProperties = CreateGlobalTextRunProperties();
 				VisualLineTextParagraphProperties paragraphProperties = CreateParagraphProperties(globalTextRunProperties);
 
-				while (heightTree.GetIsCollapsed(documentLine.LineNumber)) {
-					documentLine = documentLine.PreviousLine;
+				// 1. Original handling - handles folding (folding range always has at least one line, so previousLine won't be null)
+				DocumentLine previousLine = documentLine;
+				while(previousLine != null && heightTree.GetIsCollapsed(previousLine.LineNumber).Item1) {
+					previousLine = previousLine.PreviousLine;
+				}
+
+				// 2. Handle hiding, if previousLine == null
+				if (previousLine == null) {
+					var nextLine = documentLine.NextLine;
+					var foundNonHiddenLine = false;
+					while(nextLine != null) {
+						if (!heightTree.GetIsCollapsed(nextLine.LineNumber).Item1) {
+							foundNonHiddenLine = true;
+							break;
+						}
+						nextLine = nextLine.NextLine;
+					}
+					if (!foundNonHiddenLine) {
+						throw new Exception("Whole document is hidden and editor is enabled. Make sure to disable editor if you are hiding whole document.");
+					}
+					documentLine = nextLine;
+				} 
+				else {
+					documentLine = previousLine;
 				}
 
 				l = BuildVisualLine(documentLine,
@@ -989,6 +1014,10 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			var elementGeneratorsArray = elementGenerators.ToArray();
 			var lineTransformersArray = lineTransformers.ToArray();
 			var nextLine = firstLineInView;
+			// handle hiding - originally folding is handled, but unlike folding in hiding we don't have guarantee that first line is not collapsed
+			if (heightTree.GetIsCollapsed(nextLine.LineNumber).Item1) {
+				nextLine = null;		
+			}
 			double maxWidth = 0;
 			double yPos = -clippedPixelsOnTop;
 			while (yPos < availableSize.Height && nextLine != null) {
@@ -1003,6 +1032,10 @@ namespace ICSharpCode.AvalonEdit.Rendering
 				visualLine.VisualTop = scrollOffset.Y + yPos;
 
 				nextLine = visualLine.LastDocumentLine.NextLine;
+				// handle hiding
+				while (nextLine != null && heightTree.GetIsCollapsed(nextLine.LineNumber).Item1) {
+					nextLine = nextLine.NextLine;
+				}
 
 				yPos += visualLine.Height;
 
@@ -1066,8 +1099,11 @@ namespace ICSharpCode.AvalonEdit.Rendering
 								   IVisualLineTransformer[] lineTransformersArray,
 								   Size availableSize)
 		{
-			if (heightTree.GetIsCollapsed(documentLine.LineNumber))
+			if (heightTree.GetIsCollapsed(documentLine.LineNumber).Item1) {
+
 				throw new InvalidOperationException("Trying to build visual line from collapsed line");
+			}
+				
 
 			//Debug.WriteLine("Building line " + documentLine.LineNumber);
 
@@ -1086,7 +1122,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 				double lastLinePos = heightTree.GetVisualPosition(visualLine.LastDocumentLine.NextLine ?? visualLine.LastDocumentLine);
 				if (!firstLinePos.IsClose(lastLinePos)) {
 					for (int i = visualLine.FirstDocumentLine.LineNumber + 1; i <= visualLine.LastDocumentLine.LineNumber; i++) {
-						if (!heightTree.GetIsCollapsed(i))
+						if (!heightTree.GetIsCollapsed(i).Item1)
 							throw new InvalidOperationException("Line " + i + " was skipped by a VisualLineElementGenerator, but it is not collapsed.");
 					}
 					throw new InvalidOperationException("All lines collapsed but visual pos different - height tree inconsistency?");
@@ -1964,6 +2000,8 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		}
 		#endregion
 
+		#region HeightTree
+
 		/// <summary>
 		/// Collapses lines for the purpose of scrolling. <see cref="DocumentLine"/>s marked as collapsed will be hidden
 		/// and not used to start the generation of a <see cref="VisualLine"/>.
@@ -1980,12 +2018,12 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		/// When you no longer need the section to be collapsed, call <see cref="CollapsedLineSection.Uncollapse()"/> on the
 		/// <see cref="CollapsedLineSection"/> returned from this method.
 		/// </remarks>
-		public CollapsedLineSection CollapseLines(DocumentLine start, DocumentLine end)
+		public CollapsedLineSection CollapseLines(DocumentLine start, DocumentLine end, CollapsedLineSectionType collapsedLineSectionType)
 		{
 			VerifyAccess();
 			if (heightTree == null)
 				throw ThrowUtil.NoDocumentAssigned();
-			return heightTree.CollapseText(start, end);
+			return heightTree.CollapseText(start, end, collapsedLineSectionType);
 		}
 
 		/// <summary>
@@ -2008,6 +2046,9 @@ namespace ICSharpCode.AvalonEdit.Rendering
 				throw ThrowUtil.NoDocumentAssigned();
 			return heightTree.GetLineByVisualPosition(visualTop);
 		}
+
+		#endregion
+
 
 		/// <inheritdoc/>
 		protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)

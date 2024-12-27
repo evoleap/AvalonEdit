@@ -148,7 +148,7 @@ namespace ICSharpCode.AvalonEdit.Document
 					case 7:
 						int startLine = rnd.Next(1, document.LineCount + 1);
 						int endLine = rnd.Next(startLine, document.LineCount + 1);
-						collapsedSections.Add(heightTree.CollapseText(document.GetLineByNumber(startLine), document.GetLineByNumber(endLine)));
+						collapsedSections.Add(heightTree.CollapseText(document.GetLineByNumber(startLine), document.GetLineByNumber(endLine), CollapsedLineSectionType.Folding));
 						break;
 					case 8:
 						if (collapsedSections.Count > 0) {

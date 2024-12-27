@@ -289,7 +289,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		/// </summary>
 		public int GetVisualColumn(int relativeTextOffset)
 		{
-			ThrowUtil.CheckNotNegative(relativeTextOffset, "relativeTextOffset");
+			//ThrowUtil.CheckNotNegative(relativeTextOffset, "relativeTextOffset");
 			foreach (VisualLineElement element in elements) {
 				if (element.RelativeTextOffset <= relativeTextOffset
 					&& element.RelativeTextOffset + element.DocumentLength >= relativeTextOffset) {

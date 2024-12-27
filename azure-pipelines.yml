@@ -9,11 +9,68 @@ trigger:
 pool:
   vmImage: ubuntu-latest
 
-steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script'
+resources:
+  repositories:
+    - repository: evoleapdevops
+      type: github
+      name: evoleap/devops
+      endpoint: evoleap
 
-- script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+jobs:
+- job: BuildArtifact
+  variables:
+    versionNumber: ''
+    workingVersion: ''
+    symVer: ''
+    isRelease: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+    verPrefix: ''
+    verSuffix: ''
+  steps:
+    # Pull source code of this repo
+    - checkout: self
+    # Pull source code of evoleapdevops repo
+    - checkout: evoleapdevops
+    # Set getRepo.name to repository name  
+    - pwsh: Write-Host "##vso[task.setvariable variable=name;isOutput=true]$($env:BUILD_REPOSITORY_NAME.substring($env:BUILD_REPOSITORY_NAME.indexof([System.IO.Path]::DirectorySeparatorChar) + 1))"
+      name: getRepo
+    # Set WorkingVersion.txt and symVer(package’s final version number) based on Version.txt and isRelease
+    - template: templates/get-working-version.yml@evoleapdevops
+      parameters:
+        source: '$(getRepo.name)/Version.txt'
+        dest: '$(getRepo.name)/WorkingVersion.txt'
+        var: 'workingVersion'
+        symVar: 'symVer'
+        repo: devops
+        isRelease: $(isRelease)
+        verPrefixVar: 'verPrefix'
+        verSuffixVar: 'verSuffix'
+    # NuGet Authenticate
+    - task: NuGetAuthenticate@1
+    # Run dotnet restore for every *.sln file in the repo (restore from private feed)
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/*.sln'
+        feedsToUse: 'select'
+        vstsFeed: $(PrivateFeedId)
+    # Run dotnet test in $(getRepo.name)
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'test'
+        workingDirectory: '$(getRepo.name)'
+        arguments: '-c Release /property:Version=$(symVer)'
+    # Run dotnet build in $(getRepo.name)
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'build'
+        workingDirectory: '$(getRepo.name)'
+        arguments: '-c Release /property:Version=$(symVer)'
+    # Find all .nupkg files (excluding .symbols.nupkg) and upload it to private feed (use symVer for the package’s final version number)
+    - task: NuGetCommand@2
+      inputs:
+        command: 'push'
+        packagesToPush: '**/*.nupkg;!**/*.symbols.nupkg'
+        nuGetFeedType: 'internal'
+        publishVstsFeed: $(PrivateFeedId)
+        versioningScheme: byEnvVar
+        versionEnvVar: 'symVer'

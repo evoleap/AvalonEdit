@@ -246,25 +246,33 @@ namespace ICSharpCode.AvalonEdit.Editing
 				TextArea textArea = GetTextArea(target);
 				if (textArea != null && textArea.Document != null) {
 					if (textArea.Selection.IsEmpty) {
-						TextViewPosition startPos = textArea.Caret.Position;
+					TextViewPosition startPos = textArea.Caret.Position;
 						bool enableVirtualSpace = textArea.Options.EnableVirtualSpace;
+						
 						// When pressing delete; don't move the caret further into virtual space - instead delete the newline
-						if (caretMovement == CaretMovementType.CharRight)
+						if (caretMovement == CaretMovementType.CharRight) {
 							enableVirtualSpace = false;
+						}
+							
 						double desiredXPos = textArea.Caret.DesiredXPos;
 						TextViewPosition endPos = CaretNavigationCommandHandler.GetNewCaretPosition(
 							textArea.TextView, startPos, caretMovement, enableVirtualSpace, ref desiredXPos);
+						
 						// GetNewCaretPosition may return (0,0) as new position,
 						// thus we need to validate endPos before using it in the selection.
-						if (endPos.Line < 1 || endPos.Column < 1)
+						if (endPos.Line < 1 || endPos.Column < 1) {
 							endPos = new TextViewPosition(Math.Max(endPos.Line, 1), Math.Max(endPos.Column, 1));
+						}
+							
 						// Don't do anything if the number of lines of a rectangular selection would be changed by the deletion.
-						if (textArea.Selection is RectangleSelection && startPos.Line != endPos.Line)
+						if (textArea.Selection is RectangleSelection && startPos.Line != endPos.Line) {
 							return;
+						}
+							
 						// Don't select the text to be deleted; just reuse the ReplaceSelectionWithText logic
 						// Reuse the existing selection, so that we continue using the same logic
-						textArea.Selection.StartSelectionOrSetEndpoint(startPos, endPos)
-							.ReplaceSelectionWithText(string.Empty);
+						var newSelection = textArea.Selection.StartSelectionOrSetEndpoint(startPos, endPos);
+						newSelection.ReplaceSelectionWithText(string.Empty);
 					} else {
 						textArea.RemoveSelectedText();
 					}

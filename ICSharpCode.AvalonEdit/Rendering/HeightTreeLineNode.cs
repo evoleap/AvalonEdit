@@ -18,6 +18,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace ICSharpCode.AvalonEdit.Rendering
 {
@@ -49,6 +50,23 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			collapsedSections.Remove(section);
 			if (collapsedSections.Count == 0)
 				collapsedSections = null;
+		}
+
+		internal CollapsedLineSectionType GetCollapsedLineSectionType()
+		{
+			if (collapsedSections == null || collapsedSections.Count <= 0) {
+				throw new System.Exception("collapsedSections");
+			}
+
+			if (collapsedSections.All(cs => cs.CollapsedLineSectionType == CollapsedLineSectionType.Folding)) {
+				return CollapsedLineSectionType.Folding;
+			}
+			else if (collapsedSections.All(cs => cs.CollapsedLineSectionType == CollapsedLineSectionType.Hiding)) {
+				return CollapsedLineSectionType.Hiding;
+			} 
+			else {
+				throw new System.Exception("All collapsed sections must have same type");
+			}
 		}
 
 		/// <summary>
