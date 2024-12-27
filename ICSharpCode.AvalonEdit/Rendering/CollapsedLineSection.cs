@@ -28,7 +28,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 	{
 		DocumentLine start, end;
 		HeightTree heightTree;
-
+		private CollapsedLineSectionType _collapsedLineSectionType;
 #if DEBUG
 		internal string ID;
 		static int nextId;
@@ -36,11 +36,12 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		const string ID = "";
 #endif
 
-		internal CollapsedLineSection(HeightTree heightTree, DocumentLine start, DocumentLine end)
+		internal CollapsedLineSection(HeightTree heightTree, DocumentLine start, DocumentLine end, CollapsedLineSectionType collapsedLineSectionType)
 		{
 			this.heightTree = heightTree;
 			this.start = start;
 			this.end = end;
+			this._collapsedLineSectionType = collapsedLineSectionType;
 #if DEBUG
 			unchecked {
 				this.ID = " #" + (nextId++);
@@ -106,5 +107,29 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			return "[CollapsedSection" + ID + " Start=" + (start != null ? start.LineNumber.ToString() : "null")
 				+ " End=" + (end != null ? end.LineNumber.ToString() : "null") + "]";
 		}
+
+
+		/// <summary>
+		/// Gets the CollapsedLineSection type.
+		/// </summary>
+		public CollapsedLineSectionType CollapsedLineSectionType {
+			get { return _collapsedLineSectionType; }
+		}
+
+	}
+
+	/// <summary>
+	/// Specifies the type of CollapsedLineSection.
+	/// </summary>
+	public enum CollapsedLineSectionType
+	{
+		/// <summary>
+		/// CollapsedLineSection created as result of folding. 
+		/// </summary>
+		Folding,
+		/// <summary>
+		/// CollapsedLineSection created as result of hiding. 
+		/// </summary>
+		Hiding
 	}
 }

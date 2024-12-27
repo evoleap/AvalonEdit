@@ -18,16 +18,22 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
 using System.Xml;
 
+using AvalonEdit.Sample;
+
 using ICSharpCode.AvalonEdit.CodeCompletion;
 using ICSharpCode.AvalonEdit.Folding;
+using ICSharpCode.AvalonEdit.Hiding;
 using ICSharpCode.AvalonEdit.Highlighting;
 using ICSharpCode.AvalonEdit.Search;
 using Microsoft.Win32;
@@ -75,6 +81,12 @@ namespace ICSharpCode.AvalonEdit.Sample
 			foldingUpdateTimer.Interval = TimeSpan.FromSeconds(2);
 			foldingUpdateTimer.Tick += delegate { UpdateFoldings(); };
 			foldingUpdateTimer.Start();
+
+			/*DispatcherTimer hidingUpdateTimer = new DispatcherTimer();
+			hidingUpdateTimer.Interval = TimeSpan.FromSeconds(2);
+			hidingUpdateTimer.Tick += delegate { UpdateHidings(); };
+			hidingUpdateTimer.Start();*/
+			textEditor.Text = DemoText.DemoText1;
 		}
 
 		string currentFileName;
@@ -202,5 +214,88 @@ namespace ICSharpCode.AvalonEdit.Sample
 			}
 		}
 		#endregion
+
+		#region Hiding
+
+		HidingManager hidingManager;
+		object hidingStrategy;
+
+		void UpdateHidings()
+		{
+			if (hidingStrategy is DemoHidingStrategyBelow20) {
+				((DemoHidingStrategyBelow20)hidingStrategy).UpdateHidings(hidingManager, textEditor.Document);
+			}
+			else if (hidingStrategy is DemoHidingStrategyWholeDocument) {
+				((DemoHidingStrategyWholeDocument)hidingStrategy).UpdateHidings(hidingManager, textEditor.Document);
+			} 
+			else if (hidingStrategy is DemoHidingStrategyFirst20) {
+				((DemoHidingStrategyFirst20)hidingStrategy).UpdateHidings(hidingManager, textEditor.Document);
+			}
+		}
+
+		private void hidingComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (hidingComboBox.SelectedItem is HidingStrategies.None) {
+
+				if (hidingManager != null) {
+					HidingManager.Uninstall(hidingManager);
+				}
+				hidingManager = null;
+				hidingStrategy = null;
+				textEditor.IsEnabled = true;
+			} else {
+				if (hidingManager == null) {
+					hidingManager = HidingManager.Install(textEditor.TextArea);
+				}
+
+				foldingManager?.Clear();
+				hidingManager.Clear();
+
+				if (hidingComboBox.SelectedItem is HidingStrategies.Below20) {
+					hidingStrategy = new DemoHidingStrategyBelow20();
+					textEditor.IsEnabled = true;
+				}
+				else if (hidingComboBox.SelectedItem is HidingStrategies.WholeDocument) {
+					hidingStrategy = new DemoHidingStrategyWholeDocument();
+					textEditor.IsEnabled = false;
+				} 
+				else if (hidingComboBox.SelectedItem is HidingStrategies.First20) {
+					textEditor.TextArea.TextView.EnsureVisualLines();
+					hidingStrategy = new DemoHidingStrategyFirst20();
+					textEditor.IsEnabled = true;
+				}
+
+				UpdateHidings();
+			}
+		}
+
+
+		#endregion
+
+
+	}
+
+	public enum HidingStrategies
+	{
+		None,
+		Below20,
+		WholeDocument,
+		First20
+	}
+
+	public class EnumToStringConverter : IValueConverter
+	{
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			if (value == null)
+				return null;
+
+			return Enum.GetName(value.GetType(), value);
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

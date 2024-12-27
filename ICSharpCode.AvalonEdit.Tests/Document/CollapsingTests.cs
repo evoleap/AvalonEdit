@@ -41,15 +41,15 @@ namespace ICSharpCode.AvalonEdit.Document
 		
 		CollapsedLineSection SimpleCheck(int from, int to)
 		{
-			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(from), document.GetLineByNumber(to));
+			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(from), document.GetLineByNumber(to), CollapsedLineSectionType.Folding);
 			for (int i = 1; i < from; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			for (int i = from; i <= to; i++) {
-				Assert.IsTrue(heightTree.GetIsCollapsed(i));
+				Assert.IsTrue(heightTree.GetIsCollapsed(i).Item1);
 			}
 			for (int i = to + 1; i <= 10; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			CheckHeights();
 			return sec1;
@@ -64,10 +64,10 @@ namespace ICSharpCode.AvalonEdit.Document
 		[Test]
 		public void SimpleUncollapse()
 		{
-			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(4), document.GetLineByNumber(6));
+			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(4), document.GetLineByNumber(6), CollapsedLineSectionType.Folding);
 			sec1.Uncollapse();
 			for (int i = 1; i <= 10; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			CheckHeights();
 		}
@@ -80,7 +80,7 @@ namespace ICSharpCode.AvalonEdit.Document
 					try {
 						SimpleCheck(from, to).Uncollapse();
 						for (int i = 1; i <= 10; i++) {
-							Assert.IsFalse(heightTree.GetIsCollapsed(i));
+							Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 						}
 			CheckHeights();
 					} catch {
@@ -94,16 +94,16 @@ namespace ICSharpCode.AvalonEdit.Document
 		[Test]
 		public void InsertInCollapsedSection()
 		{
-			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(4), document.GetLineByNumber(6));
+			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(4), document.GetLineByNumber(6), CollapsedLineSectionType.Folding);
 			document.Insert(document.GetLineByNumber(5).Offset, "a\nb\nc");
 			for (int i = 1; i < 4; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			for (int i = 4; i <= 8; i++) {
-				Assert.IsTrue(heightTree.GetIsCollapsed(i));
+				Assert.IsTrue(heightTree.GetIsCollapsed(i).Item1);
 			}
 			for (int i = 9; i <= 12; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			CheckHeights();
 		}
@@ -111,18 +111,18 @@ namespace ICSharpCode.AvalonEdit.Document
 		[Test]
 		public void RemoveInCollapsedSection()
 		{
-			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(3), document.GetLineByNumber(7));
+			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(3), document.GetLineByNumber(7), CollapsedLineSectionType.Folding);
 			int line4Offset = document.GetLineByNumber(4).Offset;
 			int line6Offset = document.GetLineByNumber(6).Offset;
 			document.Remove(line4Offset, line6Offset - line4Offset);
 			for (int i = 1; i < 3; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			for (int i = 3; i <= 5; i++) {
-				Assert.IsTrue(heightTree.GetIsCollapsed(i));
+				Assert.IsTrue(heightTree.GetIsCollapsed(i).Item1);
 			}
 			for (int i = 6; i <= 8; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			CheckHeights();
 		}
@@ -130,18 +130,18 @@ namespace ICSharpCode.AvalonEdit.Document
 		[Test]
 		public void RemoveEndOfCollapsedSection()
 		{
-			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(3), document.GetLineByNumber(6));
+			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(3), document.GetLineByNumber(6), CollapsedLineSectionType.Folding);
 			int line5Offset = document.GetLineByNumber(5).Offset;
 			int line8Offset = document.GetLineByNumber(8).Offset;
 			document.Remove(line5Offset, line8Offset - line5Offset);
 			for (int i = 1; i < 3; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			for (int i = 3; i <= 5; i++) {
-				Assert.IsTrue(heightTree.GetIsCollapsed(i));
+				Assert.IsTrue(heightTree.GetIsCollapsed(i).Item1);
 			}
 			for (int i = 6; i <= 7; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			CheckHeights();
 		}
@@ -149,11 +149,11 @@ namespace ICSharpCode.AvalonEdit.Document
 		[Test]
 		public void RemoveCollapsedSection()
 		{
-			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(3), document.GetLineByNumber(3));
+			CollapsedLineSection sec1 = heightTree.CollapseText(document.GetLineByNumber(3), document.GetLineByNumber(3), CollapsedLineSectionType.Folding);
 			int line3Offset = document.GetLineByNumber(3).Offset;
 			document.Remove(line3Offset - 1, 1);
 			for (int i = 1; i <= 9; i++) {
-				Assert.IsFalse(heightTree.GetIsCollapsed(i));
+				Assert.IsFalse(heightTree.GetIsCollapsed(i).Item1);
 			}
 			CheckHeights();
 			Assert.AreSame(null, sec1.Start);

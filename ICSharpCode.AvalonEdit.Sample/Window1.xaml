@@ -23,7 +23,23 @@
 	xmlns:avalonEdit="http://icsharpcode.net/sharpdevelop/avalonedit"
 	xmlns:forms="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
 	Title="AvalonEdit.Sample" Height="500" Width="700"
+	x:Name="parent"
+	xmlns:local="clr-namespace:ICSharpCode.AvalonEdit.Sample"
+    xmlns:sys="clr-namespace:System;assembly=mscorlib" 
 	>
+	<Window.Resources>
+		<local:EnumToStringConverter x:Key="enumToStringConverter"/>
+		<DataTemplate x:Key="enumToStringDataTemplate">
+			<TextBlock Text="{Binding Converter={StaticResource enumToStringConverter}}" />
+		</DataTemplate>
+		<ObjectDataProvider x:Key="HidingStrategiesEnum"
+                        ObjectType="{x:Type sys:Enum}"
+                        MethodName="GetValues">
+			<ObjectDataProvider.MethodParameters>
+				<x:Type TypeName="local:HidingStrategies"/>
+			</ObjectDataProvider.MethodParameters>
+		</ObjectDataProvider>
+	</Window.Resources>
 	<DockPanel>
 		<ToolBar DockPanel.Dock="Top">
 			<ToolBar.Resources>
@@ -75,6 +91,12 @@
 				SelectedItem="{Binding SyntaxHighlighting, ElementName=textEditor}"
 				ItemsSource="{Binding Source={x:Static avalonEdit:HighlightingManager.Instance}, Path=HighlightingDefinitions}"
 				SelectionChanged="HighlightingComboBox_SelectionChanged"/>
+			<TextBlock>Hiding: </TextBlock>
+			<ComboBox
+				Name="hidingComboBox"
+				SelectionChanged="hidingComboBox_SelectionChanged"
+				ItemsSource="{Binding Source={StaticResource HidingStrategiesEnum}}"
+                ItemTemplate="{StaticResource enumToStringDataTemplate}"/>
 		</ToolBar>
 		<Grid>
 			<Grid.ColumnDefinitions>
@@ -86,6 +108,7 @@
 				FontFamily="Consolas"
 				FontSize="10pt"
 				SyntaxHighlighting="C#"
+				ShowLineNumbers="True"
 			>Welcome to AvalonEdit!
 			</avalonEdit:TextEditor>
 			<GridSplitter Grid.Column="1" Width="4" HorizontalAlignment="Left"/>

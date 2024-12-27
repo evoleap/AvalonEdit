@@ -338,7 +338,7 @@ namespace ICSharpCode.AvalonEdit.Folding
 				generator = new FoldingElementGenerator() { FoldingManager = this };
 				textArea.LeftMargins.Add(margin);
 				textArea.TextView.Services.AddService(typeof(FoldingManager), this);
-				// HACK: folding only works correctly when it has highest priority
+				// HACK: folding only works correctly when it has highest priority (unless we have Hiding - if we do, then Hiding should be first)
 				textArea.TextView.ElementGenerators.Insert(0, generator);
 				textArea.Caret.PositionChanged += textArea_Caret_PositionChanged;
 			}

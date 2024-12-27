@@ -19,6 +19,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 using ICSharpCode.AvalonEdit.Document;
@@ -529,17 +530,28 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			UpdateAfterChildrenChange(node);
 		}
 
-		public bool GetIsCollapsed(int lineNumber)
+		public Tuple<bool, CollapsedLineSectionType?> GetIsCollapsed(int lineNumber)
 		{
 			var node = GetNodeByIndex(lineNumber - 1);
-			return node.lineNode.IsDirectlyCollapsed || GetIsCollapedFromNode(node);
+			if (node.lineNode.IsDirectlyCollapsed) {
+				var collapsedLineSectionType = node.lineNode.GetCollapsedLineSectionType();
+				return Tuple.Create<bool, CollapsedLineSectionType?>(true, collapsedLineSectionType);
+			}
+
+			var getIsCollapedFromNodeResult = GetIsCollapedFromNode(node);
+			if (getIsCollapedFromNodeResult.Item1) {
+				var collapsedLineSectionType = getIsCollapedFromNodeResult.Item2;
+				return Tuple.Create<bool, CollapsedLineSectionType?>(true, collapsedLineSectionType);
+			}
+
+			return Tuple.Create<bool, CollapsedLineSectionType?>(false, null);
 		}
 
 		/// <summary>
 		/// Collapses the specified text section.
 		/// Runtime: O(log n)
 		/// </summary>
-		public CollapsedLineSection CollapseText(DocumentLine start, DocumentLine end)
+		public CollapsedLineSection CollapseText(DocumentLine start, DocumentLine end, CollapsedLineSectionType collapsedLineSectionType)
 		{
 			if (!document.Lines.Contains(start))
 				throw new ArgumentException("Line is not part of this document", "start");
@@ -548,7 +560,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			int length = end.LineNumber - start.LineNumber + 1;
 			if (length < 0)
 				throw new ArgumentException("start must be a line before end");
-			CollapsedLineSection section = new CollapsedLineSection(this, start, end);
+			CollapsedLineSection section = new CollapsedLineSection(this, start, end, collapsedLineSectionType);
 			AddCollapsedSection(section, length);
 #if DEBUG
 			CheckProperties();
@@ -1011,22 +1023,24 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		#endregion
 
 		#region Collapsing support
-		static bool GetIsCollapedFromNode(HeightTreeNode node)
+		static Tuple<bool, CollapsedLineSectionType?> GetIsCollapedFromNode(HeightTreeNode node)
 		{
 			while (node != null) {
-				if (node.IsDirectlyCollapsed)
-					return true;
+				if (node.IsDirectlyCollapsed) {
+					var collapsedLineSectionType = node.GetCollapsedLineSectionType();
+					return Tuple.Create<bool, CollapsedLineSectionType?>(true, collapsedLineSectionType);
+				}
 				node = node.parent;
 			}
-			return false;
+			return Tuple.Create<bool, CollapsedLineSectionType?>(false, null);
 		}
 
 		internal void AddCollapsedSection(CollapsedLineSection section, int sectionLength)
 		{
-			AddRemoveCollapsedSection(section, sectionLength, true);
+			AddOrRemoveCollapsedSection(section, sectionLength, true);
 		}
 
-		void AddRemoveCollapsedSection(CollapsedLineSection section, int sectionLength, bool add)
+		void AddOrRemoveCollapsedSection(CollapsedLineSection section, int sectionLength, bool add)
 		{
 			Debug.Assert(sectionLength > 0);
 
@@ -1054,7 +1068,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 						sectionLength -= node.right.totalCount;
 					} else {
 						// mark partially into the right subtree: go down the right subtree.
-						AddRemoveCollapsedSectionDown(section, node.right, sectionLength, add);
+						AddOrRemoveCollapsedSectionDown(section, node.right, sectionLength, add);
 						break;
 					}
 				}
@@ -1072,7 +1086,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 			UpdateAugmentedData(GetNode(section.End), UpdateAfterChildrenChangeRecursionMode.WholeBranch);
 		}
 
-		static void AddRemoveCollapsedSectionDown(CollapsedLineSection section, HeightTreeNode node, int sectionLength, bool add)
+		static void AddOrRemoveCollapsedSectionDown(CollapsedLineSection section, HeightTreeNode node, int sectionLength, bool add)
 		{
 			while (true) {
 				if (node.left != null) {
@@ -1109,7 +1123,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 		public void Uncollapse(CollapsedLineSection section)
 		{
 			int sectionLength = section.End.LineNumber - section.Start.LineNumber + 1;
-			AddRemoveCollapsedSection(section, sectionLength, false);
+			AddOrRemoveCollapsedSection(section, sectionLength, false);
 			// do not call CheckProperties() in here - Uncollapse is also called during line removals
 		}
 		#endregion
