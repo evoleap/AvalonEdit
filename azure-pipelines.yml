@@ -7,7 +7,7 @@ trigger:
 - main
 
 pool:
-  vmImage: ubuntu-latest
+  vmImage: windows-latest
 
 resources:
   repositories:
@@ -30,14 +30,11 @@ jobs:
     - checkout: self
     # Pull source code of evoleapdevops repo
     - checkout: evoleapdevops
-    # Set getRepo.name to repository name  
-    - pwsh: Write-Host "##vso[task.setvariable variable=name;isOutput=true]$($env:BUILD_REPOSITORY_NAME.substring($env:BUILD_REPOSITORY_NAME.indexof([System.IO.Path]::DirectorySeparatorChar) + 1))"
-      name: getRepo
     # Set WorkingVersion.txt and symVer(package’s final version number) based on Version.txt and isRelease
     - template: templates/get-working-version.yml@evoleapdevops
       parameters:
-        source: '$(getRepo.name)/Version.txt'
-        dest: '$(getRepo.name)/WorkingVersion.txt'
+        source: 'AvalonEdit/Version.txt'
+        dest: 'AvalonEdit/WorkingVersion.txt'
         var: 'workingVersion'
         symVar: 'symVer'
         repo: devops
@@ -53,17 +50,17 @@ jobs:
         projects: '**/*.sln'
         feedsToUse: 'select'
         vstsFeed: $(PrivateFeedId)
-    # Run dotnet test in $(getRepo.name)
+    # Run dotnet test in AvalonEdit
     - task: DotNetCoreCLI@2
       inputs:
         command: 'test'
-        workingDirectory: '$(getRepo.name)'
+        workingDirectory: 'AvalonEdit'
         arguments: '-c Release /property:Version=$(symVer)'
-    # Run dotnet build in $(getRepo.name)
+    # Run dotnet build in AvalonEdit
     - task: DotNetCoreCLI@2
       inputs:
         command: 'build'
-        workingDirectory: '$(getRepo.name)'
+        workingDirectory: 'AvalonEdit'
         arguments: '-c Release /property:Version=$(symVer)'
     # Find all .nupkg files (excluding .symbols.nupkg) and upload it to private feed (use symVer for the package’s final version number)
     - task: NuGetCommand@2
