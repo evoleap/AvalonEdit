@@ -94,6 +94,7 @@ namespace ICSharpCode.AvalonEdit.Rendering
 
 		TextDocument document;
 		HeightTree heightTree;
+		double longestLineWidth = 0.0;
 
 		/// <summary>
 		/// Gets/Sets the document displayed by the text editor.
@@ -1063,8 +1064,50 @@ namespace ICSharpCode.AvalonEdit.Rendering
 													"This can happen when Redraw() is called during measure for lines " +
 													"that are already constructed.");
 			}
+
+			if (ShouldUpdateLongestLineWidth) {
+				try {
+					DocumentLine longestLine = null;
+					foreach (var line in Document.Lines) {
+						if (!line.isDeleted) {
+							if (longestLine == null) {
+								longestLine = line;
+							} else if (line.TotalLength > longestLine.TotalLength) {
+								longestLine = line;
+							}
+						}
+					}
+
+					VisualLine visualLine = GetVisualLine(longestLine.LineNumber);
+					if (visualLine == null) {
+						visualLine = BuildVisualLine(longestLine,
+													 globalTextRunProperties, paragraphProperties,
+													 elementGeneratorsArray, lineTransformersArray,
+													 availableSize);
+					}
+
+					double _longestLineWidth = 0.0;
+					foreach (TextLine textLine in visualLine.TextLines) {
+						if (textLine.WidthIncludingTrailingWhitespace > _longestLineWidth)
+							_longestLineWidth = textLine.WidthIncludingTrailingWhitespace;
+					}
+
+					longestLineWidth = _longestLineWidth;
+				} catch { }
+			}
+
+			if (this.Options.UseLongestLineWidthAsScrollableWidth && longestLineWidth > maxWidth) {
+				maxWidth = longestLineWidth;
+			}
+
 			return maxWidth;
 		}
+
+		/// <summary>
+		/// Gets/Sets a value indicating whether the longest line width will be updated during the next call to CreateAndMeasureVisualLines.
+		/// </summary>
+		public bool ShouldUpdateLongestLineWidth { get; set; }
+
 		#endregion
 
 		#region BuildVisualLine

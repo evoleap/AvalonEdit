@@ -87,6 +87,8 @@ namespace ICSharpCode.AvalonEdit.Sample
 			hidingUpdateTimer.Tick += delegate { UpdateHidings(); };
 			hidingUpdateTimer.Start();*/
 			textEditor.Text = DemoText.DemoText1;
+			textEditor.TextArea.TextView.ShouldUpdateLongestLineWidth = true;
+			textEditor.Options.UseLongestLineWidthAsScrollableWidth = true;
 		}
 
 		string currentFileName;

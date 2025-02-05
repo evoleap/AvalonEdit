@@ -22,3 +22,15 @@ This is a fork of AvalonEdit.
                 - Removal with selection
                     - Here we also need to split removal into multiple removals in some cases
                 - ...
+- Added the `UseLongestLineWidthAsScrollableWidth` option
+    - This option allows the longest line width to be used as the scrollable width, similar to behavior seen in VS Code and several other editors.
+    - Example:
+        - ``` 
+            textEditor.Options.UseLongestLineWidthAsScrollableWidth = true;
+            ...
+            textView.ShouldUpdateLongestLineWidth = true;
+            textView.InvalidateMeasure();
+            Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background, new System.Action(() =>
+            {
+                textView.ShouldUpdateLongestLineWidth = false;
+            })); 

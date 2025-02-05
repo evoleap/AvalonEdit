@@ -308,6 +308,23 @@ namespace ICSharpCode.AvalonEdit
 			}
 		}
 
+		bool useLongestLineWidthAsScrollableWidth;
+
+		/// <summary>
+		/// Gets/Sets a value indicating whether the longest line width should be used as the scrollable width.
+		/// This should be used in conjunction with the TextView.ShouldUpdateLongestLineWidth property.
+		/// </summary>
+		[DefaultValue(false)]
+		public virtual bool UseLongestLineWidthAsScrollableWidth {
+			get { return useLongestLineWidthAsScrollableWidth; }
+			set {
+				if (useLongestLineWidthAsScrollableWidth != value) {
+					useLongestLineWidthAsScrollableWidth = value;
+					OnPropertyChanged("UseLongestLineWidthAsScrollableWidth");
+				}
+			}
+		}
+
 		double wordWrapIndentation = 0;
 
 		/// <summary>
